@@ -1,6 +1,6 @@
-# Centos 7 ISO Builder
+# RHEL 7 ISO Builder
 
-This repo allows one to create a custom CentOS 7 ISO with the necessary packages and
+This repo allows one to create a custom RHEL 7 ISO with the necessary packages and
 tooling for deploying on SmartOS and the Joyent Public Cloud.
 
 ## Requirements

@@ -10,11 +10,11 @@ IFS=$'\n\t'
 
 CUR_TIME=$(date +%FT%TZ)
 CUSTOM_RPMS=./RPMS
-DVD_LAYOUT=/data/centos-7-iso-layout
-DVD_TITLE='CentOS-7-Joyent'
-ISO=CentOS-7-x86_64-Minimal-1511.iso
+DVD_LAYOUT=/data/rhel-7-iso-layout
+DVD_TITLE='RHEL-7-Joyent'
+ISO=rhel-server-7.4-x86_64-dvd.iso
 ISO_DIR=/data/fetched-iso
-ISO_FILENAME=./centos-7-joyent.iso
+ISO_FILENAME=./rhel-7-joyent.iso
 KS_CFG=./ks.cfg
 GUESTTOOLS=sdc-vmtools
 MIRROR=https://buildlogs.centos.org/rolling/7/isos/x86_64
@@ -125,7 +125,7 @@ modify_boot_menu() {
 cleanup_layout() {
     echo "Cleaning up $DVD_LAYOUT"
     find $DVD_LAYOUT -name TRANS.TBL -exec rm '{}' +
-    COMPS_XML=$(find $DVD_LAYOUT/repodata -name '*-minimal-x86_64-comps.xml' ! -name 'repomd.xml' -exec basename {} \;)
+    COMPS_XML=$(find $DVD_LAYOUT/repodata -name '*-comps-Server.x86_64.xml' ! -name 'repomd.xml' -exec basename {} \;)
     mv $DVD_LAYOUT/repodata/$COMPS_XML $DVD_LAYOUT/repodata/comps.xml
     find $DVD_LAYOUT/repodata -type f ! -name 'comps.xml' -exec rm '{}' +
 }
