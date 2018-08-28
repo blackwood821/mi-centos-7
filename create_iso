@@ -8,19 +8,22 @@ fi
 set -euo pipefail
 IFS=$'\n\t'
 
+OS_NAME="${OS_NAME:-rhel}"
+OS_MAJOR_VERSION=${OS_MAJOR_VERSION:-7}
+OS_MINOR_VERSION=${OS_MINOR_VERSION:-4}
 CUR_TIME=$(date +%FT%TZ)
 CUSTOM_RPMS=./RPMS
-DVD_LAYOUT=/data/rhel-7-iso-layout
-DVD_TITLE='RHEL-7-Joyent'
-ISO=rhel-server-7.4-x86_64-dvd.iso
+DVD_LAYOUT=/data/${OS_NAME}-${OS_MAJOR_VERSION}-iso-layout
+DVD_TITLE="${OS_NAME^^}-${OS_MAJOR_VERSION}-Joyent"
+ISO="${ISO:-${OS_NAME}-server-${OS_MAJOR_VERSION}.${OS_MINOR_VERSION}-x86_64-dvd.iso}"
 ISO_DIR=/data/fetched-iso
-ISO_FILENAME=./rhel-7-joyent.iso
+ISO_FILENAME=./${OS_NAME}-${OS_MAJOR_VERSION}-joyent.iso
 KS_CFG=./ks.cfg
 GUESTTOOLS=sdc-vmtools
-MIRROR=https://buildlogs.centos.org/rolling/7/isos/x86_64
-MOUNT_POINT=/mnt/centos7
+MIRROR=${MIRROR:-https://buildlogs.centos.org/rolling/7/isos/x86_64}
+MOUNT_POINT=/mnt/${OS_NAME}${OS_MAJOR_VERSION}
 
-fetch_iso() {
+function fetch_iso() {
     if [[ ! -d $ISO_DIR ]]; then
         mkdir -p $ISO_DIR
     fi
@@ -67,7 +70,7 @@ fetch_iso() {
     fi
 }
 
-create_layout() {
+function create_layout() {
     echo "Creating ISO Layout"
     if [[ -d $DVD_LAYOUT ]]; then
         echo "Layout $DVD_LAYOUT exists...nuking"
@@ -103,12 +106,12 @@ create_layout() {
     echo "Finished Populating Layout"
 }
 
-copy_ks_cfg() {
+function copy_ks_cfg() {
     echo "Copying Kickstart file"
     cp $KS_CFG $DVD_LAYOUT/
 }
 
-copy_guest_tools() {
+function copy_guest_tools() {
     echo "Copying $GUESTTOOLS"
     echo "Initiallizing and fetching submodule $GUESTTOOLS"
     git submodule init
@@ -116,21 +119,20 @@ copy_guest_tools() {
     cp -R ./$GUESTTOOLS/ $DVD_LAYOUT/
 }
 
-
-modify_boot_menu() {
+function modify_boot_menu() {
     echo "Modifying grub boot menu"
     cp ./isolinux.cfg $DVD_LAYOUT/isolinux/
 }
 
-cleanup_layout() {
+function cleanup_layout() {
     echo "Cleaning up $DVD_LAYOUT"
     find $DVD_LAYOUT -name TRANS.TBL -exec rm '{}' +
-    COMPS_XML=$(find $DVD_LAYOUT/repodata -name '*-comps-Server.x86_64.xml' ! -name 'repomd.xml' -exec basename {} \;)
+    COMPS_XML=$(find $DVD_LAYOUT/repodata -name '*-comps-Server*.xml' ! -name 'repomd.xml' -exec basename {} \;)
     mv $DVD_LAYOUT/repodata/$COMPS_XML $DVD_LAYOUT/repodata/comps.xml
     find $DVD_LAYOUT/repodata -type f ! -name 'comps.xml' -exec rm '{}' +
 }
 
-create_newiso() {
+function create_newiso() {
     copy_guest_tools
     cleanup_layout
     copy_ks_cfg
@@ -154,18 +156,16 @@ create_newiso() {
 
 # main line
 
-usage() {
+function usage() {
     cat <<EOF
 Usage:
         $0 [options] command [command]
 option:
         -h                    - this usage
-
 Commands:
         fetch                 - fetch ISO
         layout                - create layout for new ISO
         finish                - create the new ISO
-
 EOF
     exit 1
 }
