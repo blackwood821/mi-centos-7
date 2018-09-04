@@ -108,6 +108,8 @@ function create_layout() {
 
 function copy_ks_cfg() {
     echo "Copying Kickstart file"
+    cat $KS_CFG | sed -e "s|\${OS_NAME}|${OS_NAME^^}|;s|\${OS_MAJOR_VERSION}|${OS_MAJOR_VERSION}|;s|\${OS_MINOR_VERSION}|${OS_MINOR_VERSION}|" > $KS_CFG.2
+    mv $KS_CFG.2 $KS_CFG
     cp $KS_CFG $DVD_LAYOUT/
 }
 
@@ -121,12 +123,15 @@ function copy_guest_tools() {
 
 function modify_boot_menu() {
     echo "Modifying grub boot menu"
+    cat isolinux.cfg | sed -e "s|\${OS_NAME}|${OS_NAME^^}|;s|\${OS_MAJOR_VERSION}|${OS_MAJOR_VERSION}|" > isolinux.cfg.2
+    mv isolinux.cfg.2 isolinux.cfg
     cp ./isolinux.cfg $DVD_LAYOUT/isolinux/
 }
 
 function cleanup_layout() {
     echo "Cleaning up $DVD_LAYOUT"
     find $DVD_LAYOUT -name TRANS.TBL -exec rm '{}' +
+   #COMPS_XML=$(find $DVD_LAYOUT/repodata -name '*-minimal-x86_64-comps.xml' ! -name 'repomd.xml' -exec basename {} \;)
     COMPS_XML=$(find $DVD_LAYOUT/repodata -name '*-comps-Server*.xml' ! -name 'repomd.xml' -exec basename {} \;)
     mv $DVD_LAYOUT/repodata/$COMPS_XML $DVD_LAYOUT/repodata/comps.xml
     find $DVD_LAYOUT/repodata -type f ! -name 'comps.xml' -exec rm '{}' +
@@ -154,26 +159,37 @@ function create_newiso() {
     echo "NEW ISO $ISO_FILENAME is ready"
 }
 
-# main line
-
 function usage() {
-    cat <<EOF
-Usage:
-        $0 [options] command [command]
-option:
-        -h                    - this usage
-Commands:
-        fetch                 - fetch ISO
-        layout                - create layout for new ISO
-        finish                - create the new ISO
+    cat <<-EOF
+    Usage:
+            $0 [options] command [command]
+    option:
+            -h                    - this usage
+    Commands:
+            fetch                 - fetch ISO
+            layout                - create layout for new ISO
+            finish                - create the new ISO
 EOF
     exit 1
 }
 
+# main line
+
 args=$(getopt -o h -n 'build_centos_iso.sh' -- "$@")
 
-if [[ $# == 0 ]]; then
-    usage;
+if [ $# -eq 0 ]; then
+    usage
+fi
+
+if [ -z "${OS_NAME}" ]; then
+    echo "OS_NAME is unset. Please export it (eg. export OS_NAME=rhel)" >&2
+    exit 1
+fi
+
+if [ ! -f "${ISO_DIR}/${ISO}" ]; then
+    echo "${ISO_DIR}/${ISO} does not exist. You can override the .iso filename by exporting ISO." >&2
+    echo "Be sure to place the .iso in ${ISO_DIR}." >&2
+    exit 1
 fi
 
 eval set -- $args
@@ -181,7 +197,7 @@ eval set -- $args
 while true ; do
    case "$1" in
        -h)
-            usage;
+            usage
             break;;
        --)
            shift; break;;
@@ -189,13 +205,13 @@ while true ; do
 done
 
 for arg ; do
-    if [[ $arg = 'fetch' ]] ; then
+    if [ $arg = 'fetch' ]; then
         fetch_iso
     fi
-    if [[ $arg = 'layout' ]] ; then
+    if [ $arg = 'layout' ]; then
         create_layout
     fi
-    if [[ $arg = 'finish' ]] ; then
+    if [ $arg = 'finish' ]; then
         create_newiso
     fi
 done
